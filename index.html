@@ -1,74 +1,162 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>シンプルToDoアプリ</title>
-    <link rel="manifest" href="manifest.json">
-    <script>
-        if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.register("service-worker.js");
-        }
-    </script>
-    <style>
-        body {
-            font-family: sans-serif;
-            max-width: 500px;
-            margin: 20px auto;
-            padding: 10px;
-        }
-        h1 {
-            text-align: center;
-        }
-        #todo-input {
-            width: 100%;
-            padding: 12px;
-            font-size: 18px;
-        }
-        #add-btn {
-            width: 100%;
-            padding: 12px;
-            margin-top: 10px;
-            font-size: 18px;
-        }
-        li {
-            padding: 10px;
-            border-bottom: 1px solid #ccc;
-            cursor: pointer;
-            font-size: 18px;
-        }
-        li:hover {
-            background: #f0f0f0;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My ToDo App</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#007bff" />
+
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .app-header {
+      background: #007bff;
+      color: white;
+      padding: 15px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+      border-radius: 0 0 12px 12px;
+      margin: -20px -20px 20px -20px;
+    }
+
+    input, button {
+      font-size: 18px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      margin-top: 10px;
+    }
+
+    .todo-item {
+      background: #ffffff;
+      padding: 15px;
+      margin-top: 10px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    input[type="checkbox"] {
+      width: 24px;
+      height: 24px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
 </head>
+
 <body>
-    <h1>ToDoリスト</h1>
+  <header class="app-header">My ToDo</header>
 
-    <input id="todo-input" type="text" placeholder="やることを入力">
-    <button id="add-btn">追加</button>
+  <div class="container">
+    <input id="todoInput" type="text" placeholder="やることを入力…" />
+    <button onclick="addTodo()">追加</button>
 
-    <ul id="todo-list"></ul>
+    <div id="todoList"></div>
+  </div>
 
-    <script>
-        const input = document.getElementById("todo-input");
-        const addBtn = document.getElementById("add-btn");
-        const list = document.getElementById("todo-list");
+  <script>
+    // -------------------------
+    // 保存されたToDoを読み込む
+    // -------------------------
+    window.onload = function() {
+      const saved = JSON.parse(localStorage.getItem("todos") || "[]");
+      saved.forEach(todo => {
+        createTodoItem(todo.text, todo.done);
+      });
+    };
 
-        addBtn.addEventListener("click", () => {
-            const text = input.value.trim();
-            if (text === "") return;
+    // -------------------------
+    // ToDo追加
+    // -------------------------
+    function addTodo() {
+      const input = document.getElementById("todoInput");
+      const text = input.value.trim();
+      if (text === "") return;
 
-            const li = document.createElement("li");
-            li.textContent = text;
+      createTodoItem(text, false);
+      saveTodos();
 
-            li.addEventListener("click", () => {
-                li.remove();
-            });
+      input.value = "";
+    }
 
-            list.appendChild(li);
-            input.value = "";
+    // -------------------------
+    // ToDoのHTMLを作る
+    // -------------------------
+    function createTodoItem(text, done) {
+      const list = document.getElementById("todoList");
+
+      const item = document.createElement("div");
+      item.className = "todo-item";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = done;
+      checkbox.onchange = saveTodos;
+
+      const label = document.createElement("span");
+      label.textContent = text;
+
+      item.appendChild(checkbox);
+      item.appendChild(label);
+      list.appendChild(item);
+    }
+
+    // -------------------------
+    // ToDoを保存する
+    // -------------------------
+    function saveTodos() {
+      const items = document.querySelectorAll(".todo-item");
+      const data = [];
+
+      items.forEach(item => {
+        const checkbox = item.querySelector("input[type='checkbox']");
+        const label = item.querySelector("span");
+
+        data.push({
+          text: label.textContent,
+          done: checkbox.checked
         });
-    </script>
+      });
+
+      localStorage.setItem("todos", JSON.stringify(data));
+    }
+
+    // -------------------------
+    // PWA service worker
+    // -------------------------
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js");
+    }
+  </script>
 </body>
 </html>
